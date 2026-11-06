@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NASA Space Apps - Martian EVA HUD</title>
+    <link rel="stylesheet" href="assets/css/hud-styles.css">
+</head>
+<body>
+    <div id="visor-container">
+        <canvas id="environmentCanvas"></canvas>
+        <div class="hud-overlay">
+            <div class="hud-panel hud-top">
+                <div>SYS: ONLINE</div>
+                <div>CRATER: JEZERO quad-4</div>
+                <div class="alert-flash">⚠️ RAD-ELEVATED</div>
+            </div>
+            <div class="hud-left hud-panel">
+                <div>
+                    <p>O2 Reserves</p>
+                    <div class="progressbar"><div class="progress-fill" id="o2-bar" style="width: 100%;"></div></div>
+                </div>
+                <div><p id="pressure-txt">Suit Pressure: 34.5 kPa</p></div>
+                <div><p id="thermal-txt">Thermal Flux: -62°C</p></div>
+                <div><p id="density-txt">Atm Density: 0.020 kg/m³</p></div>
+                <div><p>Telemetry Sync: 98.4%</p></div>
+            </div>
+            <div class="hud-right hud-panel">
+                <div>Topographic Layer</div>
+                <canvas id="minimap"></canvas>
+                <div id="distance-txt">NEXT WP: --m</div>
+            </div>
+            <div class="hud-bottom">
+                <button class="walk-btn" id="walkBtn">Hold W or Press Here to Step Forward</button>
+            </div>
+        </div>
+    </div>
+    <script src="assets/js/telemetry.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
