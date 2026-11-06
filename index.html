@@ -3,93 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Martian EVA - Strategic Simulation Command</title>
+    <title>NASA Space Apps - Martian Tactical EVA Command</title>
     <link rel="stylesheet" href="assets/css/hud-styles.css">
 </head>
 <body>
     <div id="visor-container" class="view-optical">
-        <!-- 3D Environment Rendering Core -->
+        <div class="visor-glare-effect"></div>
         <canvas id="environmentCanvas"></canvas>
         
-        <!-- Gamified HUD Layout Layer -->
         <div class="hud-overlay">
-            <!-- Strategic Status Header -->
             <div class="hud-panel hud-header">
-                <div class="telemetry-node">MISSION MET: <span id="time-elapsed">00:00</span></div>
-                <div class="telemetry-node status-glow" id="master-alert">SYSTEM NOMINAL</div>
-                <div class="telemetry-node">BATTERY: <span id="battery-txt">100%</span></div>
+                <div class="header-left">
+                    <span class="status-indicator online"></span>
+                    <span class="label">MISSION MET:</span> <span id="time-elapsed" class="value text-glow">00:00</span>
+                </div>
+                <div class="header-center">
+                    <div id="master-alert" class="master-status nominal alert-flash">SYSTEM NOMINAL</div>
+                </div>
+                <div class="header-right">
+                    <span class="label">MISSION SCORE:</span> <span id="score-txt" class="value score-glow">0000</span>
+                </div>
             </div>
 
-            <!-- Left Deck: Vital Telemetry & Live Inventory Vault -->
             <div class="hud-panel hud-left">
-                <h3>VITAL SCANNERS</h3>
-                <div class="metric-group">
-                    <label>O₂ LIFE SUPPORT</label>
-                    <div class="bar-container"><div id="o2-bar" class="bar-fill cyan" style="width:100%"></div></div>
-                </div>
-                <div class="metric-group">
-                    <label>HULL SHIELD</label>
-                    <div class="bar-container"><div id="shield-bar" class="bar-fill blue" style="width:100%"></div></div>
-                </div>
-                <div class="metric-group">
-                    <label>CO₂ SCRUBBER</label>
-                    <div class="bar-container"><div id="co2-bar" class="bar-fill green" style="width:12%"></div></div>
+                <div class="panel-section-title">🧬 LIFE SUPPORT CHANNELS</div>
+                <div class="metric-bank">
+                    <div class="metric-row">
+                        <div class="metric-info"><span>O₂ RESERVES</span><span id="o2-pct-txt">100%</span></div>
+                        <div class="bar-track"><div id="o2-bar" class="bar-fill cyan" style="width:100%"></div></div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-info"><span>HULL INTEGRITY</span><span id="shield-pct-txt">100%</span></div>
+                        <div class="bar-track"><div id="shield-bar" class="bar-fill orange" style="width:100%"></div></div>
+                    </div>
+                    <div class="metric-row">
+                        <div class="metric-info"><span>CO₂ FILTRATION</span><span id="co2-pct-txt">12%</span></div>
+                        <div class="bar-track"><div id="co2-bar" class="bar-fill green" style="width:12%"></div></div>
+                    </div>
                 </div>
                 
-                <div class="digital-readouts">
-                    <div id="pressure-txt">SUIT: 34.50 kPa</div>
-                    <div id="thermal-txt">CORE: 36.6°C</div>
+                <div class="digital-grid">
+                    <div class="readout-box"><span class="lbl">SUIT PRESSURE</span><span id="pressure-txt" class="val">34.50 kPa</span></div>
+                    <div class="readout-box"><span class="lbl">THERMAL FLUX</span><span id="thermal-txt" class="val">-62.0°C</span></div>
                 </div>
 
-                <hr class="panel-divider">
-                
-                <h3>GEOLOGIC VAULT</h3>
+                <div class="panel-section-title" style="margin-top: 15px;">🎒 GEOLOGIC SAMPLE ARCHIVE</div>
                 <div id="inventory-grid" class="inventory-grid">
-                    <div class="inv-slot empty">[EMPTY]</div>
-                    <div class="inv-slot empty">[EMPTY]</div>
-                    <div class="inv-slot empty">[EMPTY]</div>
-                    <div class="inv-slot empty">[EMPTY]</div>
+                    <div class="inv-slot empty"><div class="slot-idx">01</div>[VACANT]</div>
+                    <div class="inv-slot empty"><div class="slot-idx">02</div>[VACANT]</div>
+                    <div class="inv-slot empty"><div class="slot-idx">03</div>[VACANT]</div>
+                    <div class="inv-slot empty"><div class="slot-idx">04</div>[VACANT]</div>
                 </div>
-                
-                <hr class="panel-divider">
-                
-                <div class="score-display">GEOLOGIC SCORE: <span id="score-txt">0</span> pts</div>
             </div>
 
-            <!-- Right Deck: Multi-Spectral Controls & Topo Tracking Radar -->
             <div class="hud-panel hud-right">
-                <h3>SPECTRAL FILTER</h3>
+                <div class="panel-section-title">🛰️ MULTI-SPECTRAL LENS</div>
                 <div class="view-controls">
-                    <button class="view-btn active" onclick="changeView('optical', event)">OPTICAL</button>
-                    <button class="view-btn" onclick="changeView('thermal', event)">THERMAL</button>
-                    <button class="view-btn" onclick="changeView('topo', event)">TOPO</button>
+                    <button class="view-btn active" onclick="changeView('optical', event)">OPTICAL SPEC</button>
+                    <button class="view-btn" onclick="changeView('thermal', event)">THERMAL IR</button>
+                    <button class="view-btn" onclick="changeView('topo', event)">TOPO GRID</button>
                 </div>
                 
-                <hr class="panel-divider">
-                
-                <canvas id="minimap"></canvas>
-                <div id="distance-txt" class="wp-highlight">NEXT WP: 1000m</div>
-                <div id="speed-txt">VELOCITY: 0.0 m/s</div>
+                <div class="panel-section-title" style="margin-top: 15px;">🗺️ SURFACE TRAJECTORY</div>
+                <div class="radar-viewport">
+                    <canvas id="minimap"></canvas>
+                    <div class="radar-scanline"></div>
+                </div>
+                <div class="nav-readouts">
+                    <div id="distance-txt" class="wp-value text-glow">NEXT WP: 1000m</div>
+                    <div id="speed-txt" class="speed-value">VELOCITY: 0.0 m/s</div>
+                </div>
             </div>
 
-            <!-- Central HUD System Alert Notifications -->
             <div id="hazard-card" class="hazard-card hidden">
-                <div class="hazard-title">⚠️ DUST DEVIL INTERCEPT</div>
-                <p id="hazard-desc">High-velocity electrostatic vortex approaching from the quadrant flank.</p>
-                <div class="hazard-actions">
-                    <button onclick="handleHazard('divert')">DIVERT THROUGH CRATER</button>
-                    <button onclick="handleHazard('brace')">BRACE SHIELD CORE</button>
+                <div class="hazard-glow-border"></div>
+                <div class="hazard-content">
+                    <div class="hazard-title">⚠️ DUST DEVIL FORCE VORTEX DETECTED</div>
+                    <p id="hazard-desc">An active electrostatic sand spiral is tracking along the target heading vector.</p>
+                    <div class="hazard-actions">
+                        <button class="action-btn-warn" onclick="handleHazard('divert')">DIVERT THROUGH RAVINE</button>
+                        <button class="action-btn-warn" onclick="handleHazard('brace')">OVERCHARGE SHIELD CORES</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Bottom Deck: Operational Controls -->
             <div class="hud-bottom">
-                <button class="walk-btn" id="walkBtn">HOLD 'W' KEY OR PRESS TO TRAVEL</button>
+                <div class="control-wrapper">
+                    <div class="control-bracket left"></div>
+                    <button class="walk-btn" id="walkBtn">HOLD 'W' OR CLICK TO INITIATE MARSWALK</button>
+                    <div class="control-bracket right"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Core Modular Simulation Modules -->
     <script src="assets/js/telemetry.js"></script>
     <script src="assets/js/main.js"></script>
 </body>

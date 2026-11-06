@@ -9,11 +9,10 @@ function changeView(mode, event) {
 class TelemetrySystem {
     constructor() {
         this.oxygen = 100; this.battery = 100; this.shield = 100; this.co2 = 12;
-        this.time = 0; this.inventory = []; this.maxInventory = 4; this.score = 0;
-        this.audioCtx = null;
-        this.nextAlarmTime = 0;
+        this.time = 0; this.score = 0; this.inventory = []; this.maxInventory = 4;
+        this.audioCtx = null; this.nextAlarmTime = 0;
         
-        // Audio synthesis tracks
+        // Audio nodes for procedural weather
         this.windNoise = null; this.windGain = null; this.windFilter = null;
     }
 
@@ -34,6 +33,7 @@ class TelemetrySystem {
         for (let i = 0; i < bufferSize; i++) {
             output[i] = Math.random() * 2 - 1;
         }
+
         this.windNoise = this.audioCtx.createBufferSource();
         this.windNoise.buffer = noiseBuffer;
         this.windNoise.loop = true;
@@ -52,12 +52,35 @@ class TelemetrySystem {
         this.windNoise.start();
     }
 
+    triggerAlarmTone() {
+        if (!this.audioCtx) return;
+        const now = this.audioCtx.currentTime;
+        if (now < this.nextAlarmTime) return;
+
+        const osc = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(440, now + 0.4);
+
+        gainNode.gain.setValueAtTime(0.15, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        osc.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.4);
+        this.nextAlarmTime = now + 0.8;
+    }
+
     collectMineral(name) {
         if (this.inventory.length >= this.maxInventory) return false;
         this.inventory.push(name);
         this.score += 250;
         this.updateInventoryUI();
-        this.playBeep(600, 0.15);
+        this.playBeep(880, 0.08);
         return true;
     }
 
@@ -65,17 +88,17 @@ class TelemetrySystem {
         const slots = document.querySelectorAll('.inv-slot');
         slots.forEach((slot, index) => {
             if (this.inventory[index]) {
-                slot.innerText = this.inventory[index];
+                slot.innerText = `[ ${this.inventory[index]} ]`;
                 slot.classList.remove('empty');
                 slot.classList.add('occupied');
             }
         });
-        document.getElementById('score-txt').innerText = this.score;
     }
 
     triggerStormDamage() {
         this.shield = Math.max(0, this.shield - 0.25);
-        this.playBeep(140, 0.04);
+        this.score = Math.max(0, this.score - 2);
+        this.playBeep(120, 0.04);
     }
 
     playBeep(freq, duration) {
@@ -88,24 +111,6 @@ class TelemetrySystem {
         osc.start(); osc.stop(this.audioCtx.currentTime + duration);
     }
 
-    triggerAlarmTone() {
-        if (!this.audioCtx) return;
-        const now = this.audioCtx.currentTime;
-        if (now < this.nextAlarmTime) return;
-
-        const osc = this.audioCtx.createOscillator();
-        const gainNode = this.audioCtx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(880, now);
-        osc.frequency.exponentialRampToValueAtTime(440, now + 0.3);
-        gainNode.gain.setValueAtTime(0.1, now);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-        osc.connect(gainNode); gainNode.connect(this.audioCtx.destination);
-        osc.start(now); osc.stop(now + 0.3);
-        this.nextAlarmTime = now + 0.7;
-    }
-
     update(isMoving) {
         this.time += 1/60;
         const m = Math.floor(this.time / 60).toString().padStart(2, '0');
@@ -114,14 +119,15 @@ class TelemetrySystem {
 
         if (isMoving) {
             this.initAudio();
-            this.oxygen = Math.max(0, this.oxygen - 0.02);
-            this.battery = Math.max(0, this.battery - 0.03);
-            this.co2 = Math.min(100, this.co2 + 0.005);
-            document.getElementById('speed-txt').innerText = "VELOCITY: 3.1 m/s";
+            this.oxygen = Math.max(0, this.oxygen - 0.012);
+            this.battery = Math.max(0, this.battery - 0.018);
+            this.co2 = Math.min(100, this.co2 + 0.003);
+            this.score += 1;
+            document.getElementById('speed-txt').innerText = "VELOCITY: 3.4 m/s";
 
             if (this.audioCtx && this.windGain && this.windFilter) {
                 const now = this.audioCtx.currentTime;
-                this.windFilter.frequency.exponentialRampToValueAtTime(520, now + 0.3);
+                this.windFilter.frequency.exponentialRampToValueAtTime(550, now + 0.3);
                 this.windGain.gain.linearRampToValueAtTime(0.12, now + 0.3);
             }
         } else {
@@ -134,39 +140,37 @@ class TelemetrySystem {
         }
 
         document.getElementById('o2-bar').style.width = `${this.oxygen}%`;
-        document.getElementById('battery-txt').innerText = `${Math.floor(this.battery)}%`;
+        document.getElementById('o2-pct-txt').innerText = `${Math.ceil(this.oxygen)}%`;
+        document.getElementById('battery-txt').innerText = `${Math.ceil(this.battery)}%`;
         document.getElementById('co2-bar').style.width = `${this.co2}%`;
+        document.getElementById('co2-pct-txt').innerText = `${Math.ceil(this.co2)}%`;
         document.getElementById('shield-bar').style.width = `${this.shield}%`;
+        document.getElementById('shield-pct-txt').innerText = `${Math.ceil(this.shield)}%`;
+        document.getElementById('score-txt').innerText = Math.floor(this.score).toString().padStart(4, '0');
 
         const alertElement = document.getElementById('master-alert');
-        if (this.shield < 30 || this.oxygen < 25 || this.battery < 20) {
-            document.getElementById('visor-container').classList.add('critical-alert');
-            alertElement.innerText = "⚠️ DANGER: RUNNING CRITICAL";
-            alertElement.classList.add('alert-flash');
-            this.initAudio();
+        if (this.shield < 30 || this.oxygen < 25) {
+            alertElement.innerText = "⚠️ SYSTEM FAILURE IMMINENT";
+            alertElement.style.color = "#ff3333";
+            alertElement.style.borderColor = "#ff3333";
             this.triggerAlarmTone();
         } else {
-            document.getElementById('visor-container').classList.remove('critical-alert');
             alertElement.innerText = "SYSTEM NOMINAL";
-            alertElement.classList.remove('alert-flash');
+            alertElement.style.color = "#00ffcc";
+            alertElement.style.borderColor = "#00ffcc";
         }
-
-        const jitter = (Math.random() - 0.5) * 0.05;
-        document.getElementById('pressure-txt').innerText = `SUIT: ${(34.50 + jitter).toFixed(2)} kPa`;
-        document.getElementById('thermal-txt').innerText = `CORE: ${(36.6 + jitter).toFixed(1)}°C`;
     }
 }
 window.MarsTelemetry = new TelemetrySystem();
 
 function handleHazard(choice) {
     document.getElementById('hazard-card').classList.add('hidden');
+    document.getElementById('visor-container').classList.remove('critical-shake-active');
     if (choice === 'brace') {
-        window.MarsTelemetry.shield = Math.max(0, window.MarsTelemetry.shield - 20);
-        window.MarsTelemetry.score = Math.max(0, window.MarsTelemetry.score - 100);
-    } else if (choice === 'divert') {
-        window.MarsTelemetry.battery = Math.max(0, window.MarsTelemetry.battery - 10);
+        window.MarsTelemetry.shield = Math.max(5, window.MarsTelemetry.shield - 12);
         window.MarsTelemetry.score += 150;
+    } else {
+        window.MarsTelemetry.score += 300;
     }
-    window.MarsTelemetry.updateInventoryUI();
     window.isHazardActive = false;
 }
