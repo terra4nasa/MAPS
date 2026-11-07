@@ -3,164 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M.A.P.S - Martian Astronaut Pathfinding & Survival</title>
-    <!-- Tailwind CSS for production-grade styling without local bloat -->
-    <script src="https://tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        mars: {
-                            orange: '#E65F2B',
-                            dark: '#0B0200',
-                            glow: '#FF7D4A',
-                            cyber: '#00F0FF'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Glassmorphic Cyberpunk Utility Classes */
-        .glass-panel {
-            background: rgba(15, 5, 2, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(230, 95, 43, 0.25);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-        .cyber-border-glow {
-            box-shadow: 0 0 15px rgba(230, 95, 43, 0.2);
-        }
-        /* Scanline Overlay for HUD immersion */
-        .scanlines {
-            position: relative;
-            overflow: hidden;
-        }
-        .scanlines::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 99;
-            background-size: 100% 3px, 6px 100%;
-            pointer-events: none;
-        }
-        /* Multispectral Lens Filters */
-        .lens-optical { filter: none; }
-        .lens-thermal { filter: hue-rotate(180deg) saturate(3) contrast(1.5); }
-        .lens-ir { filter: grayscale(1) brightness(1.2) contrast(1.3); }
-        .lens-topo { filter: sepia(1) hue-rotate(140deg) saturate(4) invert(0.1); }
-    </style>
+    <title>Martian EVA - Strategic Simulation Command</title>
+    <link rel="stylesheet" href="assets/css/hud-styles.css">
 </head>
-<body class="bg-mars-dark text-gray-100 font-mono select-none scanlines h-screen overflow-hidden flex flex-col justify-between p-4">
-
-    <!-- TOP TELEMETRY STRIP -->
-    <header class="w-full flex justify-between items-center glass-panel px-6 py-3 rounded-md border-b-2 border-mars-orange/50 cyber-border-glow">
-        <div class="flex items-center space-x-4">
-            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-            <h1 class="text-xs md:text-sm tracking-widest text-mars-orange font-bold">NASA SPACE APPS // MARTIAN COMMAND EVA</h1>
-        </div>
-        <div class="flex space-x-8 text-xs tracking-wider">
-            <div>MET: <span id="telemetry-met" class="text-mars-cyber">00:00:00</span></div>
-            <div>SYS STATUS: <span class="text-green-400 font-bold">NOMINAL</span></div>
-            <div>TRAJECTORY CORE: <span id="telemetry-score" class="text-yellow-400 font-bold">0000 XP</span></div>
-        </div>
-    </header>
-
-    <!-- MAIN COMPASS & MULTI-SPECTRAL CORE DISPLAY -->
-    <main class="grid grid-cols-1 lg:grid-cols-4 gap-4 my-4 flex-grow h-3/5 overflow-hidden">
+<body>
+    <div id="visor-container" class="view-optical">
+        <!-- 3D Environment Rendering Core -->
+        <canvas id="environmentCanvas"></canvas>
         
-        <!-- LEFT: BIOMETRICS & LIFE SUPPORT CHANNELS -->
-        <section class="glass-panel p-4 rounded-md flex flex-col justify-between space-y-4">
-            <h2 class="text-xs tracking-wider border-b border-mars-orange/30 pb-1 text-mars-orange">🧬 LIFE SUPPORT CHANNELS</h2>
-            
-            <div class="space-y-3 flex-grow justify-center flex flex-col">
-                <div>
-                    <div class="flex justify-between text-xs mb-1"><span>O₂ RESERVES</span><span id="txt-o2" class="text-mars-cyber">100%</span></div>
-                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden"><div id="bar-o2" class="bg-mars-cyber h-full transition-all duration-300" style="width: 100%"></div></div>
-                </div>
-                <div>
-                    <div class="flex justify-between text-xs mb-1"><span>SUIT PRESSURE</span><span class="text-mars-orange">34.50 kPa</span></div>
-                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden"><div class="bg-mars-orange h-full" style="width: 85%"></div></div>
-                </div>
-                <div>
-                    <div class="flex justify-between text-xs mb-1"><span>CO₂ FILTRATION</span><span class="text-green-400">12% EFF</span></div>
-                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden"><div class="bg-green-400 h-full" style="width: 12%"></div></div>
-                </div>
-                <div>
-                    <div class="flex justify-between text-xs mb-1"><span>THERMAL FLUX</span><span id="txt-temp" class="text-blue-400">-62.0°C</span></div>
-                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden"><div id="bar-temp" class="bg-blue-500 h-full transition-all duration-300" style="width: 45%"></div></div>
-                </div>
+        <!-- Gamified HUD Layout Layer -->
+        <div class="hud-overlay">
+            <!-- Strategic Status Header -->
+            <div class="hud-panel hud-header">
+                <div class="telemetry-node">MISSION MET: <span id="time-elapsed">00:00</span></div>
+                <div class="telemetry-node status-glow" id="master-alert">SYSTEM NOMINAL</div>
+                <div class="telemetry-node">BATTERY: <span id="battery-txt">100%</span></div>
             </div>
 
-            <!-- GEOLOGIC ARCHIVE SLOT -->
-            <div class="border-t border-mars-orange/30 pt-2">
-                <h3 class="text-xs mb-2 text-mars-orange">🎒 GEOLOGIC ARCHIVE</h3>
-                <div class="grid grid-cols-4 gap-1 text-[10px] text-center">
-                    <div class="border border-mars-orange/20 p-1 bg-mars-orange/5 text-mars-orange">01</div>
-                    <div class="border border-dashed border-gray-600 p-1 text-gray-500">[VACANT]</div>
-                    <div class="border border-dashed border-gray-600 p-1 text-gray-500">[VACANT]</div>
-                    <div class="border border-dashed border-gray-600 p-1 text-gray-500">[VACANT]</div>
+            <!-- Left Deck: Vital Telemetry & Live Inventory Vault -->
+            <div class="hud-panel hud-left">
+                <h3>VITAL SCANNERS</h3>
+                <div class="metric-group">
+                    <label>O₂ LIFE SUPPORT</label>
+                    <div class="bar-container"><div id="o2-bar" class="bar-fill cyan" style="width:100%"></div></div>
                 </div>
-            </div>
-        </section>
-
-        <!-- CENTER: VISUALIZATION INTERFACE & DYNAMIC PATH CANVAS -->
-        <section class="lg:grid lg:col-span-2 glass-panel relative rounded-md flex flex-col overflow-hidden bg-gradient-to-b from-transparent to-mars-orange/5">
-            <!-- Lens Selector Tabs -->
-            <div class="absolute top-2 left-2 z-50 flex bg-mars-dark/80 p-1 border border-mars-orange/30 rounded text-xs space-x-1">
-                <button onclick="setLens('optical')" class="lens-btn px-2 py-0.5 bg-mars-orange text-black font-bold rounded">OPTICAL</button>
-                <button onclick="setLens('thermal')" class="lens-btn px-2 py-0.5 hover:bg-mars-orange/30 rounded">THERMAL</button>
-                <button onclick="setLens('ir')" class="lens-btn px-2 py-0.5 hover:bg-mars-orange/30 rounded">IR</button>
-                <button onclick="setLens('topo')" class="lens-btn px-2 py-0.5 hover:bg-mars-orange/30 rounded">TOPO</button>
-            </div>
-
-            <!-- Pathfinding Trajectory Render Node -->
-            <div id="lens-viewport" class="w-full h-full relative lens-optical transition-all duration-300">
-                <canvas id="mars-canvas" class="w-full h-full block"></canvas>
+                <div class="metric-group">
+                    <label>HULL SHIELD</label>
+                    <div class="bar-container"><div id="shield-bar" class="bar-fill blue" style="width:100%"></div></div>
+                </div>
+                <div class="metric-group">
+                    <label>CO₂ SCRUBBER</label>
+                    <div class="bar-container"><div id="co2-bar" class="bar-fill green" style="width:12%"></div></div>
+                </div>
                 
-                <!-- Center Aiming Reticle -->
-                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div class="w-16 h-16 border border-mars-orange/30 rounded-full flex items-center justify-center animate-spin" style="animation-duration: 20s;">
-                        <div class="w-2 h-2 bg-mars-orange rounded-full"></div>
-                    </div>
+                <div class="digital-readouts">
+                    <div id="pressure-txt">SUIT: 34.50 kPa</div>
+                    <div id="thermal-txt">CORE: 36.6°C</div>
                 </div>
-            </div>
-        </section>
 
-        <!-- RIGHT: HAZARD ANALYSIS ENGINE & EVENT CONTROLS -->
-        <section class="glass-panel p-4 rounded-md flex flex-col justify-between space-y-4">
-            <h2 class="text-xs tracking-wider border-b border-mars-orange/30 pb-1 text-mars-orange">⚠ HAZARD VECTOR ANALYSIS</h2>
-            
-            <div class="bg-red-950/30 border border-red-500/40 p-3 rounded space-y-2 flex-grow flex flex-col justify-center">
-                <div class="text-xs font-bold text-red-400 flex items-center space-x-2">
-                    <span class="animate-ping block w-2 h-2 rounded-full bg-red-500"></span>
-                    <span>DUST DEVIL DETECTED</span>
+                <hr class="panel-divider">
+                
+                <h3>GEOLOGIC VAULT</h3>
+                <div id="inventory-grid" class="inventory-grid">
+                    <div class="inv-slot empty">[EMPTY]</div>
+                    <div class="inv-slot empty">[EMPTY]</div>
+                    <div class="inv-slot empty">[EMPTY]</div>
+                    <div class="inv-slot empty">[EMPTY]</div>
                 </div>
-                <p class="text-[11px] text-gray-300 leading-relaxed">
-                    An active electrostatic column is crossing along target heading vector.
-                </p>
-                <div class="grid grid-cols-2 gap-2 pt-2">
-                    <button id="btn-divert" onclick="triggerAction('divert')" class="border border-mars-cyber text-mars-cyber hover:bg-mars-cyber/20 text-[10px] py-1 rounded tracking-tighter">DIVERT PATH</button>
-                    <button id="btn-shield" onclick="triggerAction('shield')" class="border border-mars-orange text-mars-orange hover:bg-mars-orange/20 text-[10px] py-1 rounded tracking-tighter">OVERCHARGE CORES</button>
-                </div>
+                
+                <hr class="panel-divider">
+                
+                <div class="score-display">GEOLOGIC SCORE: <span id="score-txt">0</span> pts</div>
             </div>
 
-            <!-- NAVIGATION STATS -->
-            <div class="border-t border-mars-orange/30 pt-2 space-y-1.5 text-xs">
-                <div class="flex justify-between"><span>NEXT WP:</span><span id="nav-wp" class="text-yellow-400">840m</span></div>
-                <div class="flex justify-between"><span>VELOCITY:</span><span id="nav-vel" class="text-mars-cyber">0.0 m/s</span></div>
+            <!-- Right Deck: Multi-Spectral Controls & Topo Tracking Radar -->
+            <div class="hud-panel hud-right">
+                <h3>SPECTRAL FILTER</h3>
+                <div class="view-controls">
+                    <button class="view-btn active" onclick="changeView('optical', event)">OPTICAL</button>
+                    <button class="view-btn" onclick="changeView('thermal', event)">THERMAL</button>
+                    <button class="view-btn" onclick="changeView('topo', event)">TOPO</button>
+                </div>
+                
+                <hr class="panel-divider">
+                
+                <canvas id="minimap"></canvas>
+                <div id="distance-txt" class="wp-highlight">NEXT WP: 1000m</div>
+                <div id="speed-txt">VELOCITY: 0.0 m/s</div>
             </div>
-        </section>
-    </main>
 
-    <!-- LOWER ACTION CONTROL CORE -->
-    <footer class="w-full glass-panel p-4 rounded-md text-center border-t-2 border-mars-orange/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p class="text-xs text-gray-400 max-w-md text-left hidden sm:block">
-            Hold <kbd class="bg-mars-orange/20 px-1 border border-mars-orange/40 rounded text-mars-orange font-bold">W</kbd> or interact with the Action Core to move your avatar toward target waypoint updates.
-        </p>
-        <button id="marswalk-btn" 
+            <!-- Central HUD System Alert Notifications -->
+            <div id="hazard-card" class="hazard-card hidden">
+                <div class="hazard-title">⚠️ DUST DEVIL INTERCEPT</div>
+                <p id="hazard-desc">High-velocity electrostatic vortex approaching from the quadrant flank.</p>
+                <div class="hazard-actions">
+                    <button onclick="handleHazard('divert')">DIVERT THROUGH CRATER</button>
+                    <button onclick="handleHazard('brace')">BRACE SHIELD CORE</button>
+                </div>
+            </div>
+
+            <!-- Bottom Deck: Operational Controls -->
+            <div class="hud-bottom">
+                <button class="walk-btn" id="walkBtn">HOLD 'W' KEY OR PRESS TO TRAVEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Modular Simulation Modules -->
+    <script src="assets/js/telemetry.js"></script>
+    <script src="assets/js/main.js"></script>
+</body>
+</html>

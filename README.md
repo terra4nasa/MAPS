@@ -1,22 +1,16 @@
-# Interplanetary Survival Guide - Martian Glassmorphism HUD Game
+# Interplanetary Survival Guide - Martian HUD Game Simulator
 
-An advanced, production-grade Martian Extravehicular Activity (EVA) Heads-Up Display simulation game built for the NASA Space Apps Challenge framework. This application features dynamic multi-spectral viewing lenses, real-time procedural audio synthesis, an active inventory log, and situational sandstorm hazard management routines.
+An advanced interactive, modular first-person Martian Extravehicular Activity (EVA) dashboard game simulation optimized for the NASA Space Apps Challenge framework.
 
-## 🚀 Key Architectural Layers
-* **Glassmorphic Cyberpunk Interface:** Modern layout presentation stack balancing data density with clear scannability hooks.
-* **Dual Procedural Audio Matrix:** Native browser oscillator nodes generate ambient cross-winds that change dynamically with travel velocity alongside frequency-descending safety alarms.
-* **3D Particle Depth Mesh:** Combines a 3D prospective locomotion path layout with automated environmental dust drift physics.
+## 🚀 Live Deployment
+Explore your live project environment here: **[INSERT YOUR GITHUB PAGES URL HERE]**
 
-## 📁 Repository Layout Blueprint
-Recreate the following structural tracks within your host workspace folder tree:
-```text
-/
-├── assets/
-│   ├── css/
-│   │   └── hud-styles.css
-│   └── js/
-│       ├── main.js
-│       └── telemetry.js
-├── index.html
-└── README.md
-```
+## 🎮 Implemented Features
+1. **Interactive Geologic Collection Subsystem:** Collect unique mineral formations along the path grid to increase your scientific exploration scorecard layout.
+2. **Dynamic Dust Devil Event Horizon:** Evade oncoming micro-vortices or brace shield modules to manage hull damage risks.
+3. **Procedural Atmospheric Audio Synthesizers:** Features an advanced spatial audio matrix combining whistling velocity motion-drag wind tracks and acoustic proximity alarms under critical O₂ thresholds.
+4. **Multi-Spectral Visor Lenses:** Dynamically change structural color channels on-the-fly (Optical Spec, Thermal IR, Topo Surface Map).
+
+## 🛠️ Operations Protocol
+* **Locomotion:** Hold down the `W` key or press and hold the primary tactical button at the foot deck of the interface matrix.
+* **Filter Toggle:** Click any of the spectral filter buttons on the right tactical control deck.
