@@ -2,42 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MARS 3D TACTICAL SANDBOX — v2</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mars Tactical Sandbox</title>
 <style>
   :root{
-    --bg:#05070b; --panel:rgba(14,18,26,.88); --line:rgba(90,120,160,.28);
+    --bg:#05070b; --panel:rgba(14,18,26,.9); --line:rgba(90,120,160,.28);
     --accent:#e8642c; --accent2:#4fc3f7; --gold:#ffd54f;
     --ok:#4caf50; --warn:#ff9800; --bad:#f44336;
-    --text:#dfe7f2; --dim:#7d8fa6; --mono:'SF Mono',Consolas,monospace;
+    --text:#dfe7f2; --dim:#7d8fa6; --mono:ui-monospace,Consolas,monospace;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
     font-family:'Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   canvas{display:block}
-  #viewport{position:fixed;inset:0;cursor:grab}
-  #viewport:active{cursor:grabbing}
 
-  /* ---- Vignette + scanlines ---- */
+  #stage{position:fixed;inset:0}
   #fx{position:fixed;inset:0;pointer-events:none;z-index:5;
-    background:
-      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px);
+    background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%),
+      repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 3px);
     mix-blend-mode:screen;opacity:.7}
 
-  /* ---- Boot overlay ---- */
   #boot{position:fixed;inset:0;background:#03050a;z-index:100;display:flex;
     align-items:center;justify-content:center;flex-direction:column;gap:14px;
     font-family:var(--mono);font-size:12px;color:var(--accent2);letter-spacing:1px;
-    transition:opacity .6s}
+    transition:opacity .5s}
   #boot.done{opacity:0;pointer-events:none}
   #boot .bar{width:220px;height:2px;background:#1a2230;overflow:hidden}
   #boot .bar i{display:block;height:100%;width:0;background:var(--accent);
-    transition:width .35s}
+    transition:width .3s}
 
-  /* ---- Top HUD ---- */
   #top{position:fixed;top:0;left:0;right:0;height:56px;z-index:10;
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 22px;background:linear-gradient(180deg,rgba(5,7,11,.92),transparent);
+    display:flex;align-items:center;justify-content:space-between;padding:0 22px;
+    background:linear-gradient(180deg,rgba(5,7,11,.92),transparent);
     border-bottom:1px solid var(--line)}
   #brand{display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;
     letter-spacing:2px}
@@ -48,20 +44,18 @@
   #brand small{color:var(--dim);font-weight:400;letter-spacing:1px;font-size:10px}
 
   #telemetry{display:flex;gap:22px;font-family:var(--mono);font-size:11px;color:var(--dim)}
-  #telemetry span b{color:var(--accent2);font-weight:600}
+  #telemetry b{color:var(--accent2);font-weight:600}
   #telemetry .rec{color:var(--bad);animation:pulse 1.2s infinite}
 
-  /* ---- Panels ---- */
   .panel{position:fixed;z-index:10;background:var(--panel);
     border:1px solid var(--line);border-radius:4px;backdrop-filter:blur(14px);
     box-shadow:0 8px 32px rgba(0,0,0,.55)}
   .panel::before{content:'';position:absolute;top:-1px;left:16px;right:16px;height:1px;
     background:linear-gradient(90deg,transparent,var(--accent2),transparent);opacity:.6}
 
-  #left{top:74px;left:22px;width:250px;padding:16px 16px 18px}
-  #right{top:74px;right:22px;width:320px;padding:16px 16px 18px;
+  #left{top:74px;left:22px;width:250px;padding:16px}
+  #right{top:74px;right:22px;width:320px;padding:16px;
     max-height:calc(100vh - 100px);overflow-y:auto}
-  #bottom{left:22px;bottom:22px;width:250px;padding:14px 16px}
 
   h2{font-size:10px;letter-spacing:2px;text-transform:uppercase;
     color:var(--dim);margin-bottom:12px;font-weight:600;display:flex;
@@ -69,63 +63,53 @@
   h2 .tag{font-family:var(--mono);color:var(--accent2);font-size:9px;
     background:rgba(79,195,247,.1);padding:2px 6px;border-radius:2px;letter-spacing:1px}
 
-  /* ---- Layers ---- */
   .layer{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;
     padding:8px 10px;border-radius:3px;margin-bottom:5px;cursor:pointer;
     background:rgba(255,255,255,.02);border:1px solid transparent;
-    transition:.18s;font-size:12px}
+    transition:.18s;font-size:12px;user-select:none}
   .layer:hover{background:rgba(255,255,255,.05);border-color:var(--line)}
   .layer.on{background:rgba(232,100,44,.08);border-color:rgba(232,100,44,.4)}
   .layer .sw{width:10px;height:10px;border-radius:2px;box-shadow:0 0 8px currentColor}
-  .layer .nm{color:var(--text)}
   .layer .st{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px}
   .layer.on .st{color:var(--ok)}
 
-  /* ---- Mode ---- */
   .mode{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 14px}
   .mode button{padding:9px 4px;border-radius:3px;border:1px solid var(--line);
     background:rgba(255,255,255,.02);color:var(--text);font-size:11px;cursor:pointer;
-    transition:.18s;font-weight:500;letter-spacing:.5px;display:flex;
-    align-items:center;justify-content:center;gap:6px}
+    transition:.18s;font-weight:500;letter-spacing:.5px}
   .mode button:hover{border-color:var(--accent2)}
   .mode button.on{background:var(--accent);border-color:var(--accent);color:#fff;
     box-shadow:0 0 20px rgba(232,100,44,.4)}
 
-  /* ---- Score ---- */
   #score{text-align:center;padding:16px 0 14px;margin-bottom:14px;
     border:1px solid var(--line);border-radius:3px;
     background:radial-gradient(circle at 50% 40%,rgba(79,195,247,.06),transparent 70%)}
-  #score .val{font-size:52px;font-weight:200;line-height:.95;
-    font-family:var(--mono);transition:.3s;letter-spacing:-2px}
+  #score .val{font-size:52px;font-weight:200;line-height:.95;font-family:var(--mono);
+    transition:color .3s;letter-spacing:-2px;color:#3a4556}
   #score .lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;
     color:var(--dim);margin-top:8px;font-weight:600}
   #score .sub{font-size:10px;color:var(--dim);margin-top:4px;font-family:var(--mono)}
 
-  /* ---- Contribution bars ---- */
   .contrib{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
   .row{display:grid;grid-template-columns:72px 1fr 34px;gap:8px;align-items:center;
     font-size:11px}
   .row .nm{color:var(--dim);font-size:10px;letter-spacing:.5px}
   .row .track{height:4px;background:rgba(255,255,255,.06);border-radius:2px;
-    overflow:hidden;position:relative}
-  .row .fill{height:100%;border-radius:2px;transition:.4s}
+    overflow:hidden}
+  .row .fill{height:100%;width:0;transition:.4s}
   .row .vl{font-family:var(--mono);font-size:10px;text-align:right;color:var(--text)}
 
-  /* ---- Profile chart ---- */
   #profileWrap{border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
   #profile{width:100%;height:52px;display:block}
   #profileWrap .cap{font-family:var(--mono);font-size:9px;color:var(--dim);
     display:flex;justify-content:space-between;margin-top:5px;letter-spacing:.5px}
 
-  /* ---- Metrics ---- */
-  .metrics{display:flex;flex-direction:column;gap:0}
-  .m{display:flex;justify-content:space-between;font-size:11px;
-    padding:6px 0;border-bottom:1px dashed rgba(90,120,160,.14);font-family:var(--mono)}
+  .m{display:flex;justify-content:space-between;font-size:11px;padding:6px 0;
+    border-bottom:1px dashed rgba(90,120,160,.14);font-family:var(--mono)}
   .m:last-child{border-bottom:none}
   .m .k{color:var(--dim)}
   .m .v{font-weight:600}
 
-  /* ---- Log ---- */
   #log{position:fixed;left:22px;top:calc(100vh - 210px);width:250px;z-index:9;
     font-family:var(--mono);font-size:10px;color:var(--dim);line-height:1.7;
     pointer-events:none;max-height:130px;overflow:hidden}
@@ -133,14 +117,12 @@
   @keyframes fadein{to{opacity:1}}
   #log .t{color:var(--accent2);opacity:.7}
 
-  /* ---- Tooltip ---- */
   #tip{position:fixed;pointer-events:none;background:rgba(5,7,11,.96);
     border:1px solid var(--accent2);border-radius:3px;padding:5px 9px;
     font-family:var(--mono);font-size:10px;color:var(--accent2);
     transform:translate(-50%,-140%);white-space:nowrap;z-index:20;
     display:none;box-shadow:0 0 20px rgba(79,195,247,.3)}
 
-  /* ---- Scan sweep overlay ---- */
   #scan{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;
     background:linear-gradient(180deg,transparent 0%,rgba(232,100,44,.14) 48%,
       rgba(232,100,44,.3) 50%,rgba(232,100,44,.14) 52%,transparent 100%);
@@ -154,12 +136,14 @@
 </style>
 </head>
 <body>
+
 <div id="boot">
   <div>MARS TACTICAL SANDBOX · BOOT</div>
   <div class="bar"><i id="bootBar"></i></div>
   <div id="bootMsg">initializing…</div>
 </div>
-<div id="viewport"></div>
+
+<canvas id="stage"></canvas>
 <div id="fx"></div>
 <div id="scan"></div>
 
@@ -167,7 +151,7 @@
   <div id="brand">
     <span class="dot"></span>
     MARS <em>TACTICAL SANDBOX</em>
-    <small>· SURVIVAL PLANNER v2.1</small>
+    <small>· SURVIVAL PLANNER</small>
   </div>
   <div id="telemetry">
     <span class="rec">● REC</span>
@@ -179,7 +163,7 @@
 </header>
 
 <aside class="panel" id="left">
-  <h2>Survival Layers <span class="tag">4</span></h2>
+  <h2>Survival Layers <span class="tag">5</span></h2>
   <div class="layer on" data-k="ice">
     <span class="sw" style="background:#4fc3f7;color:#4fc3f7"></span>
     <span class="nm">Water Ice</span><span class="st">ON</span></div>
@@ -192,33 +176,32 @@
   <div class="layer" data-k="comm">
     <span class="sw" style="background:#9c27b0;color:#9c27b0"></span>
     <span class="nm">Comms Window</span><span class="st">OFF</span></div>
+  <div class="layer on" data-k="grid">
+    <span class="sw" style="background:#4fc3f7;color:#4fc3f7;opacity:.5"></span>
+    <span class="nm">Graticule</span><span class="st">ON</span></div>
 
   <h2 style="margin-top:16px">Placement</h2>
   <div class="mode">
     <button class="on" data-m="hab">◉ Habitat</button>
     <button data-m="solar">☀ Solar</button>
   </div>
-  <h2>Grid</h2>
-  <div class="layer on" data-k="grid">
-    <span class="sw" style="background:#4fc3f7;color:#4fc3f7;opacity:.5"></span>
-    <span class="nm">Graticule</span><span class="st">ON</span></div>
 </aside>
 
 <aside class="panel" id="right">
   <h2>Site Feasibility <span class="tag" id="statusTag">IDLE</span></h2>
   <div id="score">
-    <div class="val" id="scoreVal" style="color:#3a4556">—</div>
+    <div class="val" id="scoreVal">—</div>
     <div class="lbl" id="scoreLbl">Awaiting placement</div>
     <div class="sub" id="scoreSub">click Mars surface</div>
   </div>
 
-  <div class="contrib" id="contrib">
-    <div class="row"><span class="nm">ICE</span><div class="track"><div class="fill" id="c-ice" style="width:0%;background:#4fc3f7"></div></div><span class="vl" id="v-ice">—</span></div>
-    <div class="row"><span class="nm">SOLAR</span><div class="track"><div class="fill" id="c-sol" style="width:0%;background:#ffd54f"></div></div><span class="vl" id="v-sol">—</span></div>
-    <div class="row"><span class="nm">COMMS</span><div class="track"><div class="fill" id="c-com" style="width:0%;background:#9c27b0"></div></div><span class="vl" id="v-com">—</span></div>
-    <div class="row"><span class="nm">RAD ↓</span><div class="track"><div class="fill" id="c-rad" style="width:0%;background:#f44336"></div></div><span class="vl" id="v-rad">—</span></div>
-    <div class="row"><span class="nm">DUST ↓</span><div class="track"><div class="fill" id="c-dus" style="width:0%;background:#ff9800"></div></div><span class="vl" id="v-dus">—</span></div>
-    <div class="row"><span class="nm">SLOPE ↓</span><div class="track"><div class="fill" id="c-slo" style="width:0%;background:#8899aa"></div></div><span class="vl" id="v-slo">—</span></div>
+  <div class="contrib">
+    <div class="row"><span class="nm">ICE</span><div class="track"><div class="fill" id="c-ice" style="background:#4fc3f7"></div></div><span class="vl" id="v-ice">—</span></div>
+    <div class="row"><span class="nm">SOLAR</span><div class="track"><div class="fill" id="c-sol" style="background:#ffd54f"></div></div><span class="vl" id="v-sol">—</span></div>
+    <div class="row"><span class="nm">COMMS</span><div class="track"><div class="fill" id="c-com" style="background:#9c27b0"></div></div><span class="vl" id="v-com">—</span></div>
+    <div class="row"><span class="nm">RAD ↓</span><div class="track"><div class="fill" id="c-rad" style="background:#f44336"></div></div><span class="vl" id="v-rad">—</span></div>
+    <div class="row"><span class="nm">DUST ↓</span><div class="track"><div class="fill" id="c-dus" style="background:#ff9800"></div></div><span class="vl" id="v-dus">—</span></div>
+    <div class="row"><span class="nm">SLOPE ↓</span><div class="track"><div class="fill" id="c-slo" style="background:#8899aa"></div></div><span class="vl" id="v-slo">—</span></div>
   </div>
 
   <div id="profileWrap">
@@ -229,7 +212,8 @@
         <stop offset="1" stop-color="#e8642c" stop-opacity="0"/>
       </linearGradient></defs>
       <line x1="0" y1="42" x2="300" y2="42" stroke="rgba(90,120,160,.25)" stroke-width=".5"/>
-      <path id="profPath" fill="url(#pg)" stroke="#e8642c" stroke-width="1.2"/>
+      <path id="profPath" fill="url(#pg)" stroke="#e8642c" stroke-width="1.2"
+        d="M0,42 L300,42"/>
     </svg>
     <div class="cap"><span id="profMin">— km</span><span id="profMax">— km</span></div>
   </div>
@@ -245,597 +229,718 @@
 <div id="log"></div>
 <div id="tip"></div>
 
-<script type="importmap">
-{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+<script>
+/* =========================================================
+   MARS TACTICAL SANDBOX — Canvas 2D, no dependencies
+   ========================================================= */
+(function(){
+'use strict';
 
-// ================= BOOT =================
-const bootBar = document.getElementById('bootBar');
-const bootMsg = document.getElementById('bootMsg');
-const bootSteps = ['loading ephemeris…','generating terrain…','baking albedo…',
+/* ---------- BOOT ---------- */
+var bootBar = document.getElementById('bootBar');
+var bootMsg = document.getElementById('bootMsg');
+var bootEl  = document.getElementById('boot');
+var steps = ['loading ephemeris…','generating terrain…','baking albedo…',
   'seeding ice model…','calibrating radiation…','ready'];
-let bi=0;
-const bootTick = setInterval(()=>{
-  bootBar.style.width = ((bi+1)/bootSteps.length*100)+'%';
-  bootMsg.textContent = bootSteps[bi++];
-  if(bi>=bootSteps.length){
-    clearInterval(bootTick);
-    setTimeout(()=>document.getElementById('boot').classList.add('done'),350);
-  }
-},260);
+var bi = 0;
+var bootTick = setInterval(function(){
+  bootBar.style.width = Math.min(100,((bi+1)/steps.length*100))+'%';
+  bootMsg.textContent = steps[bi++] || 'ready';
+  if(bi > steps.length){ clearInterval(bootTick); }
+}, 180);
 
-// ================= SCENE =================
-const viewport = document.getElementById('viewport');
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.1, 2000);
-camera.position.set(0, 0.6, 4.6);
+/* ---------- CANVAS ---------- */
+var canvas = document.getElementById('stage');
+var ctx = canvas.getContext('2d');
+var DPR = Math.min(window.devicePixelRatio||1, 2);
+var W=0,H=0,CX=0,CY=0,SRAD=0;
 
-const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
-viewport.appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.dampingFactor = 0.06;
-controls.rotateSpeed = 0.45; controls.minDistance = 2.4;
-controls.maxDistance = 9; controls.enablePan = false;
-controls.autoRotate = true; controls.autoRotateSpeed = 0.25;
-
-// Lighting: harsh sun from upper-left
-const sun = new THREE.DirectionalLight(0xfff0dc, 3.2);
-sun.position.set(-5, 3, 4);
-scene.add(sun);
-scene.add(new THREE.AmbientLight(0x1a2430, 0.9));
-scene.add(new THREE.HemisphereLight(0x6a8099, 0x1a0a05, 0.35));
-
-// Stars
-{
-  const g = new THREE.BufferGeometry();
-  const n = 1400, pos = new Float32Array(n*3);
-  for(let i=0;i<n;i++){
-    const r = 60+Math.random()*40;
-    const t = Math.random()*Math.PI*2, p = Math.acos(2*Math.random()-1);
-    pos[i*3]  = r*Math.sin(p)*Math.cos(t);
-    pos[i*3+1]= r*Math.cos(p);
-    pos[i*3+2]= r*Math.sin(p)*Math.sin(t);
-  }
-  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({
-    color:0xffffff, size:0.12, transparent:true, opacity:0.8,
-    sizeAttenuation:true})));
+function resize(){
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = W*DPR; canvas.height = H*DPR;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CX = W/2; CY = H/2;
+  SRAD = Math.min(W,H) * 0.32;
 }
+resize();
+window.addEventListener('resize', resize);
 
-// ================= MARS TEXTURE (fBm) =================
-const R = 1.5;
-
-// Value noise
-function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); }
+/* ---------- MARS TEXTURE ---------- */
+/* fBm value noise baked into a 1024x512 offscreen canvas, then sampled
+   per-pixel during the sphere projection. */
+function hash(x,y){ var s = Math.sin(x*127.1 + y*311.7)*43758.5453; return s - Math.floor(s); }
 function vnoise(x,y){
-  const xi=Math.floor(x), yi=Math.floor(y);
-  const xf=x-xi, yf=y-yi;
-  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
-  const a=hash(xi,yi), b=hash(xi+1,yi), c=hash(xi,yi+1), d=hash(xi+1,yi+1);
-  return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;
+  var xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi;
+  var u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+  var a=hash(xi,yi), b=hash(xi+1,yi), c=hash(xi,yi+1), d=hash(xi+1,yi+1);
+  return a*(1-u)*(1-v) + b*u*(1-v) + c*(1-u)*v + d*u*v;
 }
-function fbm(x,y,oct=5){
-  let v=0, a=0.5, f=1;
-  for(let i=0;i<oct;i++){ v+=a*vnoise(x*f,y*f); a*=0.5; f*=2; }
+function fbm(x,y,oct){
+  var v=0,a=0.5,f=1;
+  for(var i=0;i<oct;i++){ v += a*vnoise(x*f,y*f); a*=0.5; f*=2; }
   return v;
 }
 
-function buildMarsTexture(){
-  const W=2048, H=1024;
-  const c = document.createElement('canvas'); c.width=W; c.height=H;
-  const ctx = c.getContext('2d');
-  const img = ctx.createImageData(W,H);
-  const d = img.data;
+var TEX_W = 1024, TEX_H = 512;
+var texCanvas = document.createElement('canvas');
+texCanvas.width = TEX_W; texCanvas.height = TEX_H;
+var texCtx = texCanvas.getContext('2d');
+var texImg = texCtx.createImageData(TEX_W, TEX_H);
+var texData = texImg.data;
 
-  // Reference features for elevation bias (lat,lon,intensity)
-  const bulges = [
-    {lat:0,lon:250,w:1.0,rad:60},   // Tharsis
-    {lat:-14,lon:300,w:0.8,rad:35}, // Valles Marineris (rift: negative)
-    {lat:18.6,lon:226,w:1.2,rad:6}, // Olympus
-    {lat:46.7,lon:252,w:0.5,rad:45},// Utopia basin (negative)
-  ];
+var BULGES = [
+  {lat:0,   lon:250, w: 1.0, rad:60},  // Tharsis
+  {lat:-14, lon:300, w:-0.6, rad:30},  // Valles (rift)
+  {lat:18.6,lon:226, w: 1.2, rad:8},   // Olympus
+  {lat:46.7,lon:252, w:-0.4, rad:45},  // Utopia basin
+  {lat:82,  lon:0,   w: 0.3, rad:40},
+  {lat:-80, lon:0,   w: 0.25,rad:40}
+];
 
-  for(let y=0;y<H;y++){
-    const lat = 90 - (y/H)*180;
-    const latR = lat*Math.PI/180;
-    for(let x=0;x<W;x++){
-      const lon = -180 + (x/W)*360;
-      const i = (y*W+x)*4;
+function elevationAt(lat, lon){
+  var e = 0.5 + 0.12*Math.sin(lat*Math.PI/60)*Math.cos(lon*Math.PI/90);
+  for(var i=0;i<BULGES.length;i++){
+    var b = BULGES[i];
+    var dLat = lat-b.lat;
+    var dLon = (lon-b.lon)*Math.cos(lat*Math.PI/180);
+    var d = Math.sqrt(dLat*dLat + dLon*dLon)/b.rad;
+    e += b.w * Math.exp(-d*d) * 0.35;
+  }
+  return Math.max(0, Math.min(1, e));
+}
 
-      // Base fBm elevation
-      let e = fbm(x*0.008, y*0.008, 6);
-      // Add bulges
-      for(const b of bulges){
-        const dLat = lat-b.lat, dLon=(lon-b.lon)*Math.cos(lat*Math.PI/180);
-        const dist = Math.hypot(dLat,dLon)/b.rad;
-        e += b.w * Math.exp(-dist*dist) * 0.35;
-      }
-      // Southern highlands rougher
-      if(lat<0) e += (fbm(x*0.02,y*0.02,4)-0.5)*0.15;
+function bakeTexture(){
+  var i=0;
+  for(var y=0;y<TEX_H;y++){
+    var lat = 90 - (y/TEX_H)*180;
+    for(var x=0;x<TEX_W;x++){
+      var lon = -180 + (x/TEX_W)*360;
+      var e = elevationAt(lat, lon);
+      // fine noise to break banding
+      var fine = fbm(x*0.02, y*0.02, 3) * 0.1;
+      e = Math.max(0, Math.min(1, e + (fine-0.05)*0.15));
 
-      // Albedo: rusty + dark basalt + bright dust
-      let r,g,b;
-      const base = e;
-      // dark regions
-      if(base<0.42){
-        r = 90+base*180; g=45+base*120; b=30+base*90;
+      var r,g,b;
+      if(e < 0.42){
+        r = 90 + e*180;  g = 45 + e*120;  b = 30 + e*90;
       } else {
-        r = 140+(base-0.42)*220; g=85+(base-0.42)*160; b=50+(base-0.42)*110;
+        r = 140 + (e-0.42)*220; g = 85 + (e-0.42)*160; b = 50 + (e-0.42)*110;
       }
-      // dust brightening
-      const dust = fbm(x*0.015, y*0.015, 3);
+      var dust = fbm(x*0.015, y*0.015, 3);
       r = r*0.75 + dust*80 + 40;
       g = g*0.75 + dust*60 + 25;
       b = b*0.75 + dust*45 + 15;
 
-      // Polar caps
-      const absLat = Math.abs(lat);
-      if(absLat>72){
-        const capMix = Math.min(1,(absLat-72)/15);
-        r = r*(1-capMix) + 235*capMix;
-        g = g*(1-capMix) + 240*capMix;
-        b = b*(1-capMix) + 250*capMix;
+      var absLat = Math.abs(lat);
+      if(absLat > 72){
+        var cap = Math.min(1,(absLat-72)/15);
+        r = r*(1-cap) + 235*cap;
+        g = g*(1-cap) + 240*cap;
+        b = b*(1-cap) + 250*cap;
       }
-      // subtle fine noise
-      const fine = (hash(x,y)-0.5)*14;
-
-      d[i]   = Math.max(0,Math.min(255, r+fine));
-      d[i+1] = Math.max(0,Math.min(255, g+fine));
-      d[i+2] = Math.max(0,Math.min(255, b+fine));
-      d[i+3] = 255;
+      var n = (hash(x,y)-0.5)*14;
+      texData[i]   = Math.max(0,Math.min(255, r+n));
+      texData[i+1] = Math.max(0,Math.min(255, g+n));
+      texData[i+2] = Math.max(0,Math.min(255, b+n));
+      texData[i+3] = 255;
+      i += 4;
     }
   }
-  ctx.putImageData(img,0,0);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 8;
-  return t;
+  texCtx.putImageData(texImg, 0, 0);
 }
 
-// Bump map derived from the same fBm (simplified re-sample)
-function buildBumpTexture(){
-  const W=1024, H=512;
-  const c = document.createElement('canvas'); c.width=W; c.height=H;
-  const ctx = c.getContext('2d');
-  const img = ctx.createImageData(W,H); const d = img.data;
-  for(let y=0;y<H;y++){
-    const lat = 90-(y/H)*180;
-    for(let x=0;x<W;x++){
-      const e = fbm(x*0.016, y*0.016, 5);
-      const v = Math.floor(e*255);
-      const i=(y*W+x)*4;
-      d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+/* small texture sampling helper */
+function sampleTex(lat, lon){
+  var x = ((lon+180)/360 * TEX_W)|0;
+  var y = ((90-lat)/180 * TEX_H)|0;
+  x = (x % TEX_W + TEX_W) % TEX_W;
+  y = Math.max(0, Math.min(TEX_H-1, y));
+  var i = (y*TEX_W + x) * 4;
+  return [texData[i], texData[i+1], texData[i+2]];
+}
+
+/* ---------- MATH: lat/lon -> sphere, sphere -> screen ---------- */
+/* Rotations: yaw (lon offset) + pitch (lat tilt) */
+var yaw = 0, pitch = 0.25, zoom = 1;
+
+function rotMatrix(){
+  // simple rotation: first pitch around X, then yaw around Y
+  var cp=Math.cos(pitch), sp=Math.sin(pitch);
+  var cy=Math.cos(yaw),   sy=Math.sin(yaw);
+  return {
+    // apply pitch then yaw
+    apply: function(x,y,z){
+      // pitch (around X axis)
+      var y1 =  y*cp - z*sp;
+      var z1 =  y*sp + z*cp;
+      // yaw (around Y axis)
+      var x2 =  x*cy + z1*sy;
+      var z2 = -x*sy + z1*cy;
+      return [x2, y1, z2];
     }
+  };
+}
+
+function latLonToXYZ(lat, lon){
+  var phi   = (90-lat) * Math.PI/180;
+  var theta = (lon+180) * Math.PI/180;
+  return [
+    -Math.sin(phi)*Math.cos(theta),
+     Math.cos(phi),
+     Math.sin(phi)*Math.sin(theta)
+  ];
+}
+
+function project(lat, lon){
+  var p = latLonToXYZ(lat, lon);
+  var m = rotMatrix();
+  var r = m.apply(p[0], p[1], p[2]);
+  return {
+    x: CX + r[0]*SRAD*zoom,
+    y: CY - r[1]*SRAD*zoom,
+    z: r[2],
+    visible: r[2] > 0
+  };
+}
+
+function screenToLatLon(mx, my){
+  var nx = (mx - CX) / (SRAD*zoom);
+  var ny = -(my - CY) / (SRAD*zoom);
+  var r2 = nx*nx + ny*ny;
+  if(r2 > 1) return null;
+  var nz = Math.sqrt(1 - r2);
+  // inverse rotation
+  var cp=Math.cos(-pitch), sp=Math.sin(-pitch);
+  var cy=Math.cos(-yaw),   sy=Math.sin(-yaw);
+  // inverse yaw around Y
+  var x1 =  nx*cy - nz*sy;
+  var z1 =  nx*sy + nz*cy;
+  var y1 =  ny;
+  // inverse pitch around X
+  var y2 =  y1*cp - z1*sp;
+  var z2 =  y1*sp + z1*cp;
+  // back to lat/lon
+  var lat = Math.asin(Math.max(-1,Math.min(1,y2))) * 180/Math.PI;
+  var theta = Math.atan2(z2, -x1);
+  var lon = theta*180/Math.PI - 180;
+  lon = ((lon+540)%360)-180;
+  return {lat:lat, lon:lon, z:z2};
+}
+
+/* ---------- STARS ---------- */
+var stars = [];
+(function(){
+  for(var i=0;i<400;i++){
+    stars.push({
+      x: Math.random(), y: Math.random(),
+      s: 0.5+Math.random()*1.5,
+      a: 0.2+Math.random()*0.7,
+      tw: Math.random()*Math.PI*2
+    });
   }
-  ctx.putImageData(img,0,0);
-  const t = new THREE.CanvasTexture(c);
-  return t;
-}
+})();
 
-const marsGeo = new THREE.SphereGeometry(R, 128, 128);
-const marsMat = new THREE.MeshStandardMaterial({
-  map: buildMarsTexture(),
-  bumpMap: buildBumpTexture(),
-  bumpScale: 0.02,
-  roughness: 0.94,
-  metalness: 0.02
-});
-const mars = new THREE.Mesh(marsGeo, marsMat);
-scene.add(mars);
+/* ---------- LAYERS ---------- */
+var layerOn = {ice:true, rad:true, dust:false, comm:false, grid:true};
 
-// Atmosphere rim
-{
-  const atmo = new THREE.Mesh(
-    new THREE.SphereGeometry(R*1.03, 64, 64),
-    new THREE.ShaderMaterial({
-      transparent:true, side:THREE.BackSide, blending:THREE.AdditiveBlending,
-      uniforms:{c:{value:new THREE.Color(0xff8855)}},
-      vertexShader:`varying vec3 vN; varying vec3 vP;
-        void main(){ vN=normalize(normalMatrix*normal);
-          vP=(modelViewMatrix*vec4(position,1.)).xyz;
-          gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-      fragmentShader:`varying vec3 vN; varying vec3 vP; uniform vec3 c;
-        void main(){ float rim = pow(1.0 - abs(dot(vN, normalize(-vP))), 3.0);
-          gl_FragColor = vec4(c, rim*0.5); }`
-    })
-  );
-  scene.add(atmo);
-}
+var ICE_SITES = [
+  {lat:82,   lon:0,   s:1.3,  i:0.95},
+  {lat:-80,  lon:0,   s:1.2,  i:0.9},
+  {lat:46.7, lon:252, s:0.9,  i:0.85},
+  {lat:39.5, lon:20,  s:0.6,  i:0.7},
+  {lat:18.4, lon:77.7,s:0.45, i:0.65},
+  {lat:-68,  lon:120, s:0.8,  i:0.75},
+  {lat:60,   lon:300, s:0.55, i:0.6},
+  {lat:72,   lon:120, s:0.7,  i:0.7}
+];
 
-// ================= COORDS =================
-function latLonToVec(lat, lon, r){
-  const phi=(90-lat)*Math.PI/180, theta=(lon+180)*Math.PI/180;
-  return new THREE.Vector3(
-    -r*Math.sin(phi)*Math.cos(theta),
-     r*Math.cos(phi),
-     r*Math.sin(phi)*Math.sin(theta));
-}
-function vecToLatLon(v){
-  const n=v.clone().normalize();
-  const lat=Math.asin(n.y)*180/Math.PI;
-  let lon=-((Math.atan2(n.z,-n.x)*180/Math.PI)+180);
-  lon=((lon+540)%360)-180;
-  return {lat,lon};
-}
+var seed = 1337;
+function rnd(){ seed = (seed*16807) % 2147483647; return (seed-1)/2147483646; }
 
-// ================= GRATICULE =================
-const gridGroup = new THREE.Group();
-mars.add(gridGroup);
-{
-  const mat = new THREE.LineBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.12});
-  const rr = R*1.003;
-  // lat lines
-  for(let lat=-75; lat<=75; lat+=15){
-    const pts=[];
-    for(let lon=-180; lon<=180; lon+=3) pts.push(latLonToVec(lat,lon,rr));
-    gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
-  }
-  // lon lines
-  for(let lon=-180; lon<180; lon+=15){
-    const pts=[];
-    for(let lat=-90; lat<=90; lat+=3) pts.push(latLonToVec(lat,lon,rr));
-    gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
-  }
-}
-
-// ================= LAYERS =================
-const layerGroup = new THREE.Group();
-mars.add(layerGroup);
-
-let seed = 1337;
-const rnd = ()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; };
-
-const LAYERS = {
-  ice: {color:0x4fc3f7, opacity:0.55, pts:[
-    {lat:82,lon:0,s:1.3,i:.95}, {lat:-80,lon:0,s:1.2,i:.9},
-    {lat:46.7,lon:252,s:0.9,i:.85},  // Utopia
-    {lat:39.5,lon:20,s:0.6,i:.7},    // Deuteronilus
-    {lat:18.4,lon:77.7,s:0.45,i:.65},// Jezero delta
-    {lat:-68,lon:120,s:0.8,i:.75},
-    {lat:60,lon:300,s:0.55,i:.6},
-    {lat:72,lon:120,s:0.7,i:.7},     // Korolev
-  ]},
-  rad: {color:0xf44336, opacity:0.22, pts:[]},
-  dust:{color:0xff9800, opacity:0.28, pts:[]},
-  comm:{color:0x9c27b0, opacity:0.28, pts:[]},
-};
-for(let i=0;i<14;i++) LAYERS.rad.pts.push({
+var RAD_SITES=[], DUST_SITES=[], COMM_SITES=[];
+for(var i=0;i<14;i++) RAD_SITES.push({
   lat: rnd()*50-25, lon: rnd()*360-180, s:0.8+rnd()*0.7, i:0.4+rnd()*0.5});
-for(let i=0;i<10;i++) LAYERS.dust.pts.push({
+for(var i=0;i<10;i++) DUST_SITES.push({
   lat: -28+rnd()*36, lon: rnd()*360-180, s:0.9+rnd()*0.7, i:0.4+rnd()*0.5});
-for(let i=0;i<8;i++) LAYERS.comm.pts.push({
+for(var i=0;i<8;i++) COMM_SITES.push({
   lat: 55+rnd()*30, lon: rnd()*360-180, s:0.8+rnd()*0.5, i:0.4+rnd()*0.5});
 
-function glowTex(hex){
-  const c=document.createElement('canvas'); c.width=c.height=128;
-  const ctx=c.getContext('2d');
-  const col='#'+hex.toString(16).padStart(6,'0');
-  const rg=ctx.createRadialGradient(64,64,0,64,64,64);
-  rg.addColorStop(0,col); rg.addColorStop(.35,col+'bb');
-  rg.addColorStop(.75,col+'22'); rg.addColorStop(1,col+'00');
-  ctx.fillStyle=rg; ctx.fillRect(0,0,128,128);
-  return new THREE.CanvasTexture(c);
+/* ---------- RENDER: MARS ---------- */
+function drawMars(){
+  // ambient glow behind planet
+  var glow = ctx.createRadialGradient(CX, CY, SRAD*0.7, CX, CY, SRAD*1.4);
+  glow.addColorStop(0, 'rgba(232,100,44,0.10)');
+  glow.addColorStop(1, 'rgba(232,100,44,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0,0,W,H);
+
+  // Per-pixel sphere via ImageData
+  var d = ctx.getImageData(0,0,canvas.width, canvas.height);
+  var px = d.data;
+  var cw = canvas.width, ch = canvas.height;
+
+  var cxD = CX*DPR, cyD = CY*DPR, rD = SRAD*zoom*DPR;
+  var m = rotMatrix();
+
+  var minX = Math.max(0, Math.floor(cxD - rD));
+  var maxX = Math.min(cw, Math.ceil(cxD + rD));
+  var minY = Math.max(0, Math.floor(cyD - rD));
+  var maxY = Math.min(ch, Math.ceil(cyD + rD));
+
+  // Light direction (upper-left, toward viewer)
+  var lx = -0.55, ly = 0.55, lz = 0.65;
+  var llen = Math.sqrt(lx*lx+ly*ly+lz*lz);
+  lx/=llen; ly/=llen; lz/=llen;
+
+  for(var y=minY; y<maxY; y++){
+    var ny = (y - cyD) / rD;
+    for(var x=minX; x<maxX; x++){
+      var nx = (x - cxD) / rD;
+      var r2 = nx*nx + ny*ny;
+      if(r2 > 1) continue;
+      var nz = Math.sqrt(1 - r2);
+
+      // inverse rotate to get lat/lon
+      var n1x = nx, n1y = -ny, n1z = nz;
+
+      // undo yaw
+      var cp1=Math.cos(-yaw),  sp1=Math.sin(-yaw);
+      var x1 =  n1x*cp1 - n1z*sp1;
+      var z1 =  n1x*sp1 + n1z*cp1;
+      var y1 =  n1y;
+
+      // undo pitch
+      var cp2=Math.cos(-pitch), sp2=Math.sin(-pitch);
+      var y2 =  y1*cp2 - z1*sp2;
+      var z2 =  y1*sp2 + z1*cp2;
+
+      var lat = Math.asin(Math.max(-1,Math.min(1,y2))) * 180/Math.PI;
+      var theta = Math.atan2(z2, -x1);
+      var lon = theta*180/Math.PI - 180;
+      lon = ((lon+540)%360)-180;
+
+      var col = sampleTex(lat, lon);
+      var cr = col[0], cg = col[1], cb = col[2];
+
+      // lighting (sphere normal in view space = nx,-ny,nz... but we
+      // already used -ny for uv. Use view-space normal for light.)
+      var nnx = nx, nny = -ny, nnz = nz;
+      var lambert = nnx*lx + nny*ly + nnz*lz;
+      lambert = Math.max(0, lambert);
+
+      // rim darkening near edge
+      var edge = 1 - Math.pow(r2, 4) * 0.5;
+      var shade = (0.12 + lambert*0.95) * edge;
+
+      // atmospheric rim tint
+      var rim = Math.pow(r2, 3) * 0.35;
+
+      cr = cr*shade + 255*rim*0.35;
+      cg = cg*shade + 120*rim*0.35;
+      cb = cb*shade + 80*rim*0.35;
+
+      var ii = (y*cw + x)*4;
+      px[ii]   = Math.min(255, cr);
+      px[ii+1] = Math.min(255, cg);
+      px[ii+2] = Math.min(255, cb);
+      px[ii+3] = 255;
+    }
+  }
+  ctx.putImageData(d, 0, 0);
 }
 
-const layerMeshes={};
-for(const k in LAYERS){
-  const def=LAYERS[k]; const g=new THREE.Group();
-  const tex=glowTex(def.color);
-  def.pts.forEach(p=>{
-    const m=new THREE.SpriteMaterial({map:tex, color:def.color,
-      transparent:true, opacity:def.opacity*p.i, depthWrite:false,
-      blending:THREE.AdditiveBlending});
-    const sp=new THREE.Sprite(m);
-    sp.position.copy(latLonToVec(p.lat,p.lon,R*1.014));
-    sp.scale.set(p.s,p.s,1);
-    g.add(sp);
-  });
-  layerMeshes[k]=g; layerGroup.add(g);
+/* ---------- RENDER: OVERLAYS (graticule + glow layers) ---------- */
+function drawGraticule(){
+  if(!layerOn.grid) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(79,195,247,0.14)';
+  ctx.lineWidth = 0.7;
+  // lat lines
+  for(var lat=-75; lat<=75; lat+=15){
+    ctx.beginPath();
+    var first = true;
+    for(var lon=-180; lon<=180; lon+=4){
+      var p = project(lat, lon);
+      if(p.z <= 0){ first = true; continue; }
+      if(first){ ctx.moveTo(p.x,p.y); first=false; }
+      else ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+  }
+  // lon lines
+  for(var lon=-180; lon<180; lon+=15){
+    ctx.beginPath();
+    var first = true;
+    for(var lat=-90; lat<=90; lat+=3){
+      var p = project(lat, lon);
+      if(p.z <= 0){ first = true; continue; }
+      if(first){ ctx.moveTo(p.x,p.y); first=false; }
+      else ctx.lineTo(p.x,p.y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
-const layerOn = {ice:true, rad:true, dust:false, comm:false, grid:true};
-function refreshLayers(){
-  for(const k in layerMeshes) layerMeshes[k].visible = layerOn[k];
-  gridGroup.visible = layerOn.grid;
-}
-refreshLayers();
 
-// ================= INTERACTION =================
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const tip = document.getElementById('tip');
-const tLat=document.getElementById('t-lat'), tLon=document.getElementById('t-lon'),
-      tAlt=document.getElementById('t-alt');
-let hoverPoint=null, dragDist=0, lastX=0,lastY=0;
-
-function setMode(m){
-  document.querySelectorAll('.mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
-  placementMode=m;
+function drawGlowSite(lat, lon, color, size, opacity){
+  var p = project(lat, lon);
+  if(!p.visible) return;
+  var r = SRAD * 0.28 * size * zoom;
+  var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+  g.addColorStop(0, 'rgba('+color+','+(opacity)+')');
+  g.addColorStop(0.35, 'rgba('+color+','+(opacity*0.5)+')');
+  g.addColorStop(1, 'rgba('+color+',0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+  ctx.fill();
 }
-let placementMode='hab';
-document.querySelectorAll('.mode button').forEach(b=>{
-  b.addEventListener('click',()=>{setMode(b.dataset.m);log('Mode → '+b.dataset.m);});
+
+function drawLayers(){
+  if(layerOn.ice){
+    for(var i=0;i<ICE_SITES.length;i++){
+      var s = ICE_SITES[i];
+      drawGlowSite(s.lat, s.lon, '79,195,247', s.s, 0.55*s.i);
+    }
+  }
+  if(layerOn.rad){
+    for(var i=0;i<RAD_SITES.length;i++){
+      var s = RAD_SITES[i];
+      drawGlowSite(s.lat, s.lon, '244,67,54', s.s, 0.22*s.i);
+    }
+  }
+  if(layerOn.dust){
+    for(var i=0;i<DUST_SITES.length;i++){
+      var s = DUST_SITES[i];
+      drawGlowSite(s.lat, s.lon, '255,152,0', s.s, 0.28*s.i);
+    }
+  }
+  if(layerOn.comm){
+    for(var i=0;i<COMM_SITES.length;i++){
+      var s = COMM_SITES[i];
+      drawGlowSite(s.lat, s.lon, '156,39,176', s.s, 0.28*s.i);
+    }
+  }
+}
+
+/* ---------- PLACEMENT ---------- */
+var placed = null; // {lat, lon}
+var placementMode = 'hab';
+var pulseT = 0;
+
+function drawMarker(){
+  if(!placed) return;
+  var p = project(placed.lat, placed.lon);
+  if(!p.visible) return;
+  var isHab = placementMode === 'hab';
+  var col = isHab ? '232,100,44' : '255,213,79';
+
+  // pulse ring
+  var pr = SRAD*0.06*zoom * (1 + 0.35*Math.sin(pulseT*4));
+  ctx.strokeStyle = 'rgba('+col+','+(0.5+0.35*Math.sin(pulseT*4))+')';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, pr, 0, Math.PI*2);
+  ctx.stroke();
+
+  // beacon pillar
+  var topY = p.y - SRAD*0.22*zoom;
+  var grad = ctx.createLinearGradient(p.x, p.y, p.x, topY);
+  grad.addColorStop(0, 'rgba('+col+',0.85)');
+  grad.addColorStop(1, 'rgba('+col+',0)');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(p.x, topY);
+  ctx.stroke();
+
+  // dot
+  ctx.fillStyle = 'rgba('+col+',1)';
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 3.5*zoom, 0, Math.PI*2);
+  ctx.fill();
+}
+
+/* ---------- MAIN LOOP ---------- */
+var lastT = 0;
+var autoRotate = true;
+var dragging = false, dragStartX=0, dragStartY=0, lastX=0, lastY=0, dragDist=0;
+
+function frame(t){
+  var dt = (t - lastT)/1000 || 0;
+  lastT = t;
+  pulseT += dt;
+
+  if(autoRotate && !dragging){
+    yaw += dt * 0.06;
+  }
+
+  // clear with dark
+  ctx.fillStyle = '#05070b';
+  ctx.fillRect(0,0,W,H);
+
+  // stars
+  for(var i=0;i<stars.length;i++){
+    var s = stars[i];
+    var a = s.a * (0.7 + 0.3*Math.sin(pulseT*0.7 + s.tw));
+    ctx.fillStyle = 'rgba(255,255,255,'+a+')';
+    ctx.fillRect(s.x*W, s.y*H, s.s, s.s);
+  }
+
+  drawMars();
+  drawGraticule();
+  drawLayers();
+  drawMarker();
+
+  requestAnimationFrame(frame);
+}
+
+/* ---------- INTERACTION ---------- */
+canvas.addEventListener('mousedown', function(e){
+  dragging = true; dragDist = 0;
+  lastX = e.clientX; lastY = e.clientY;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  autoRotate = false;
+  canvas.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', function(e){
+  if(dragging){
+    var dx = e.clientX - lastX;
+    var dy = e.clientY - lastY;
+    yaw += dx * 0.005;
+    pitch = Math.max(-1.4, Math.min(1.4, pitch + dy * 0.005));
+    dragDist += Math.abs(dx) + Math.abs(dy);
+    lastX = e.clientX; lastY = e.clientY;
+  }
+  updateHover(e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', function(e){
+  if(dragging && dragDist < 5){
+    handleClick(e.clientX, e.clientY);
+  }
+  dragging = false;
+  canvas.style.cursor = 'grab';
 });
 
-document.querySelectorAll('.layer').forEach(el=>{
-  el.addEventListener('click',()=>{
-    const k=el.dataset.k;
-    layerOn[k]=!layerOn[k];
-    el.classList.toggle('on',layerOn[k]);
-    el.querySelector('.st').textContent=layerOn[k]?'ON':'OFF';
-    refreshLayers();
-  });
-});
+canvas.addEventListener('wheel', function(e){
+  e.preventDefault();
+  zoom = Math.max(0.6, Math.min(2.2, zoom * (1 - e.deltaY*0.001)));
+}, {passive:false});
 
-renderer.domElement.addEventListener('pointermove', e=>{
-  if(e.buttons){ dragDist += Math.hypot(e.clientX-lastX, e.clientY-lastY); }
-  lastX=e.clientX; lastY=e.clientY;
+// touch (basic)
+canvas.addEventListener('touchstart', function(e){
+  if(e.touches.length === 1){
+    dragging=true; dragDist=0;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    autoRotate=false;
+  }
+}, {passive:true});
+canvas.addEventListener('touchmove', function(e){
+  if(dragging && e.touches.length===1){
+    var dx = e.touches[0].clientX - lastX;
+    var dy = e.touches[0].clientY - lastY;
+    yaw += dx*0.005;
+    pitch = Math.max(-1.4, Math.min(1.4, pitch + dy*0.005));
+    dragDist += Math.abs(dx)+Math.abs(dy);
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+  }
+}, {passive:true});
+canvas.addEventListener('touchend', function(e){
+  if(dragging && dragDist < 8 && e.changedTouches.length===1){
+    handleClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  }
+  dragging=false;
+}, {passive:true});
 
-  mouse.x=(e.clientX/innerWidth)*2-1;
-  mouse.y=-(e.clientY/innerHeight)*2+1;
-  raycaster.setFromCamera(mouse,camera);
-  const hit=raycaster.intersectObject(mars)[0];
-  if(hit){
-    hoverPoint=hit.point.clone();
-    const {lat,lon}=vecToLatLon(hit.point);
-    tLat.textContent=lat.toFixed(2)+'°';
-    tLon.textContent=lon.toFixed(2)+'°';
-    tAlt.textContent=(elevationAt(lat,lon)*3.4).toFixed(1)+' km';
+canvas.style.cursor = 'grab';
+
+/* Hover telemetry */
+var tLat = document.getElementById('t-lat');
+var tLon = document.getElementById('t-lon');
+var tAlt = document.getElementById('t-alt');
+var tip = document.getElementById('tip');
+
+function updateHover(mx, my){
+  var ll = screenToLatLon(mx, my);
+  if(ll && ll.z > 0){
+    tLat.textContent = ll.lat.toFixed(2)+'°';
+    tLon.textContent = ll.lon.toFixed(2)+'°';
+    tAlt.textContent = (elevationAt(ll.lat,ll.lon)*3.4).toFixed(1)+' km';
     tip.style.display='block';
-    tip.style.left=e.clientX+'px';
-    tip.style.top=e.clientY+'px';
-    tip.textContent=`${lat.toFixed(2)}°  ${lon.toFixed(2)}°`;
+    tip.style.left = mx+'px';
+    tip.style.top  = my+'px';
+    tip.textContent = ll.lat.toFixed(2)+'°  '+ll.lon.toFixed(2)+'°';
   } else {
-    hoverPoint=null;
-    tip.style.display='none';
     tLat.textContent='—'; tLon.textContent='—'; tAlt.textContent='—';
+    tip.style.display='none';
   }
-});
-
-renderer.domElement.addEventListener('pointerdown', e=>{dragDist=0;lastX=e.clientX;lastY=e.clientY;});
-renderer.domElement.addEventListener('click', ()=>{
-  if(dragDist>6 || !hoverPoint) return;
-  analyzeAndPlace(hoverPoint.clone());
-});
-
-// ================= ELEVATION MODEL =================
-// Returns normalized 0..1 elevation for any lat/lon, matching texture bulges
-function elevationAt(lat, lon){
-  let e = 0.5 + 0.12*Math.sin(lat*Math.PI/60)*Math.cos(lon*Math.PI/90);
-  const bulges=[
-    {lat:0,lon:250,w:1.0,rad:60},
-    {lat:-14,lon:300,w:-0.6,rad:30},
-    {lat:18.6,lon:226,w:1.2,rad:8},
-    {lat:46.7,lon:252,w:-0.4,rad:45},
-    {lat:82,lon:0,w:0.3,rad:40},
-    {lat:-80,lon:0,w:0.25,rad:40},
-  ];
-  for(const b of bulges){
-    const dLat=lat-b.lat, dLon=(lon-b.lon)*Math.cos(lat*Math.PI/180);
-    const d=Math.hypot(dLat,dLon)/b.rad;
-    e += b.w*Math.exp(-d*d)*0.35;
-  }
-  return Math.max(0,Math.min(1,e));
 }
 
-// ================= FEASIBILITY =================
+/* ---------- CLICK -> ANALYZE ---------- */
+function handleClick(mx,my){
+  var ll = screenToLatLon(mx,my);
+  if(!ll || ll.z <= 0) return;
+  placed = {lat: ll.lat, lon: ll.lon};
+  var scan = document.getElementById('scan');
+  scan.classList.remove('on'); void scan.offsetWidth; scan.classList.add('on');
+  analyze(ll.lat, ll.lon);
+}
+
+/* ---------- FEASIBILITY ---------- */
 function angular(lat1,lon1,lat2,lon2){
-  const p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
-  const dl=(lon2-lon1)*Math.PI/180;
-  return Math.acos(Math.sin(p1)*Math.sin(p2)+Math.cos(p1)*Math.cos(p2)*Math.cos(dl));
+  var p1=lat1*Math.PI/180, p2=lat2*Math.PI/180;
+  var dl=(lon2-lon1)*Math.PI/180;
+  return Math.acos(Math.max(-1,Math.min(1,
+    Math.sin(p1)*Math.sin(p2)+Math.cos(p1)*Math.cos(p2)*Math.cos(dl))));
 }
 
 function feasibility(lat, lon){
-  // ICE — proximity to known subsurface ice
-  const iceSites=[
-    {lat:82,lon:0,w:1.0},{lat:-80,lon:0,w:.95},{lat:46.7,lon:252,w:.85},
-    {lat:39.5,lon:20,w:.7},{lat:18.4,lon:77.7,w:.6},{lat:72,lon:120,w:.75},
-    {lat:-68,lon:120,w:.8},{lat:60,lon:300,w:.55},
-  ];
-  let ice=0, nearestIce=null;
-  iceSites.forEach(s=>{
-    const d=angular(lat,lon,s.lat,s.lon);
-    const v=s.w*Math.exp(-(d/0.55)**2);
-    if(v>ice){ice=v; nearestIce=s;}
-  });
+  var ice=0;
+  for(var i=0;i<ICE_SITES.length;i++){
+    var s = ICE_SITES[i];
+    var d = angular(lat,lon,s.lat,s.lon);
+    var v = s.i*Math.exp(-(d/0.55)*(d/0.55));
+    if(v > ice) ice = v;
+  }
+  var rad = 0.32 + 0.55*Math.cos(lat*Math.PI/180);
+  var latR = lat*Math.PI/180;
+  var sol = 0.42 + 0.5*Math.cos(latR*1.15) - 0.08*Math.abs(Math.sin(latR*3));
+  var dust = 0.28 + 0.42*Math.exp(-Math.pow((lat+28)/24,2));
+  var comm = 0.6 + 0.3*Math.abs(Math.cos((lon-180)*Math.PI/180));
 
-  // RAD — poleward = lower
-  const rad = 0.32 + 0.55*Math.cos(lat*Math.PI/180);
+  var eps=0.5;
+  var eL=elevationAt(lat,lon-eps), eR=elevationAt(lat,lon+eps);
+  var eD=elevationAt(lat-eps,lon), eU=elevationAt(lat+eps,lon);
+  var cosLat = Math.max(0.1, Math.cos(lat*Math.PI/180));
+  var dLon=(eR-eL)/(2*eps*cosLat*111);
+  var dLat=(eU-eD)/(2*eps*111);
+  var slope = Math.atan(Math.sqrt(dLon*dLon+dLat*dLat)*1000)*180/Math.PI;
 
-  // SOL — mid-lats best
-  const latR=lat*Math.PI/180;
-  const sol = 0.42 + 0.5*Math.cos(latR*1.15) - 0.08*Math.abs(Math.sin(latR*3));
-
-  // DUST — southern mid-band
-  const dust = 0.28 + 0.42*Math.exp(-((lat+28)/24)**2);
-
-  // COMM — near-side bonus (use lon proxy)
-  const comm = 0.6 + 0.3*Math.abs(Math.cos((lon-180)*Math.PI/180));
-
-  // SLOPE — from elevation gradient
-  const eps=0.5;
-  const eL=elevationAt(lat,lon-eps), eR=elevationAt(lat,lon+eps);
-  const eD=elevationAt(lat-eps,lon), eU=elevationAt(lat+eps,lon);
-  const dLon=(eR-eL)/ (2*eps*Math.cos(lat*Math.PI/180)*111);
-  const dLat=(eU-eD)/(2*eps*111);
-  const slope = Math.atan(Math.hypot(dLon,dLat)*1000)*180/Math.PI;
-
-  // Weighted total
-  const w = {ice:0.28, sol:0.22, comm:0.14, rad:-0.18, dust:-0.12, slope:-0.06};
-  const raw = w.ice*ice + w.sol*sol + w.comm*comm
-            + w.rad*rad + w.dust*dust + w.slope*Math.min(slope/25,1);
-  const total = Math.round(Math.max(0,Math.min(100, (raw+0.45)*120)));
-
-  return {ice,rad,sol,dust,comm,slope,total,nearestIce};
+  var raw = 0.28*ice + 0.22*sol + 0.14*comm
+          - 0.18*rad - 0.12*dust - 0.06*Math.min(slope/25,1);
+  var total = Math.round(Math.max(0,Math.min(100,(raw+0.45)*120)));
+  return {ice:ice,rad:rad,sol:sol,dust:dust,comm:comm,slope:slope,total:total};
 }
 
-// ================= PLACEMENT =================
-const markers = new THREE.Group();
-mars.add(markers);
-let pulseRing=null;
-
-function analyzeAndPlace(point){
-  const {lat,lon}=vecToLatLon(point);
-
-  // Scan sweep
-  const scan=document.getElementById('scan');
-  scan.classList.remove('on'); void scan.offsetWidth; scan.classList.add('on');
-
-  // Clear previous
-  while(markers.children.length) markers.remove(markers.children[0]);
-
-  // Marker group
-  const isHab = placementMode==='hab';
-  const col = isHab ? 0xe8642c : 0xffd54f;
-  const mg = new THREE.Group();
-
-  const base = new THREE.Mesh(
-    new THREE.ConeGeometry(0.05, 0.11, 20),
-    new THREE.MeshStandardMaterial({color:col, emissive:col, emissiveIntensity:0.8,
-      roughness:.3, metalness:.6})
-  );
-  mg.add(base);
-
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.075, 0.1, 40),
-    new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.8,
-      side:THREE.DoubleSide})
-  );
-  ring.rotation.x=-Math.PI/2; ring.position.y=0.01;
-  mg.add(ring);
-  pulseRing = ring;
-
-  // Beacon pillar
-  const pillar = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.002, 0.002, 0.5, 6),
-    new THREE.MeshBasicMaterial({color:col, transparent:true, opacity:0.5})
-  );
-  pillar.position.y=0.25;
-  mg.add(pillar);
-
-  mg.position.copy(latLonToVec(lat,lon,R*1.005));
-  mg.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
-    mg.position.clone().normalize());
-  markers.add(mg);
-
-  // Compute and render
-  const s = feasibility(lat,lon);
-  renderScore(s, lat, lon, isHab);
-  drawProfile(lat,lon);
-
-  document.getElementById('statusTag').textContent =
-    s.total>=70?'GO':s.total>=45?'MARGINAL':'NO-GO';
-
-  log(`Site ${lat.toFixed(1)}°, ${lon.toFixed(1)}° → ${s.total} (${isHab?'HAB':'SOLAR'})`);
-}
-
-// ================= RENDER SCORE =================
-function renderScore(s, lat, lon, isHab){
-  const col = s.total>=70?'#4caf50':s.total>=45?'#ff9800':'#f44336';
-  const v=document.getElementById('scoreVal');
-  v.textContent=s.total; v.style.color=col;
-  v.animate([{opacity:.3,transform:'scale(.9)'},{opacity:1,transform:'scale(1)'}],
-    {duration:340,easing:'ease-out'});
+/* ---------- RENDER SCORE ---------- */
+function renderScore(s, lat, lon){
+  var col = s.total>=70?'#4caf50':s.total>=45?'#ff9800':'#f44336';
+  var v = document.getElementById('scoreVal');
+  v.textContent = s.total;
+  v.style.color = col;
   document.getElementById('scoreLbl').textContent =
-    s.total>=70?(isHab?'VIABLE HABITAT SITE':'STRONG SOLAR SITE')
-    :s.total>=45?'MARGINAL — MITIGATION REQUIRED':'HIGH RISK — RECONSIDER';
+    s.total>=70?(placementMode==='hab'?'VIABLE HABITAT SITE':'STRONG SOLAR SITE')
+    :s.total>=45?'MARGINAL — MITIGATION REQUIRED'
+    :'HIGH RISK — RECONSIDER';
   document.getElementById('scoreSub').textContent =
-    `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+    lat.toFixed(2)+'°, '+lon.toFixed(2)+'°';
 
-  const bars=[
-    ['ice',s.ice*100,true],['sol',s.sol*100,true],['com',s.comm*100,true],
-    ['rad',s.rad*100,false],['dus',s.dust*100,false],['slo',Math.min(s.slope*4,100),false],
+  var bars = [
+    ['ice', s.ice*100, true],
+    ['sol', s.sol*100, true],
+    ['com', s.comm*100, true],
+    ['rad', s.rad*100, false],
+    ['dus', s.dust*100, false],
+    ['slo', Math.min(s.slope*4,100), false]
   ];
-  bars.forEach(([k,val,pos])=>{
-    const cEl=document.getElementById('c-'+k);
-    const vEl=document.getElementById('v-'+k);
-    cEl.style.width=Math.round(val)+'%';
-    vEl.textContent=Math.round(val);
+  for(var i=0;i<bars.length;i++){
+    var k = bars[i][0], val = bars[i][1], pos = bars[i][2];
+    document.getElementById('c-'+k).style.width = Math.round(val)+'%';
+    var vEl = document.getElementById('v-'+k);
+    vEl.textContent = Math.round(val);
     vEl.style.color = pos
       ? (val>=65?'#4caf50':val>=40?'#ff9800':'#f44336')
       : (val<=35?'#4caf50':val<=60?'#ff9800':'#f44336');
-  });
+  }
 
-  document.getElementById('m-dose').textContent = (0.2+s.rad*0.9).toFixed(2)+' mSv/d';
-  document.getElementById('m-ill').textContent = Math.round(s.sol*100)+'%';
+  document.getElementById('m-dose').textContent  = (0.2+s.rad*0.9).toFixed(2)+' mSv/d';
+  document.getElementById('m-ill').textContent   = Math.round(s.sol*100)+'%';
   document.getElementById('m-depth').textContent = s.ice>0.5?
-    (0.4+(1-s.ice)*2.1).toFixed(1)+' m':'no signal';
-  document.getElementById('m-comm').textContent = (3+Math.abs(Math.sin(lon*Math.PI/180))*14).toFixed(1)+' min';
+    (0.4+(1-s.ice)*2.1).toFixed(1)+' m' : 'no signal';
+  document.getElementById('m-comm').textContent  =
+    (3+Math.abs(Math.sin(lon*Math.PI/180))*14).toFixed(1)+' min';
+
+  document.getElementById('statusTag').textContent =
+    s.total>=70?'GO':s.total>=45?'MARGINAL':'NO-GO';
 }
 
-// ================= PROFILE CHART =================
+/* ---------- PROFILE ---------- */
 function drawProfile(lat, lon){
-  const pts=[];
-  const span=25; // degrees E-W
-  for(let i=0;i<=30;i++){
-    const l = lon-span/2 + (i/30)*span;
-    const e = elevationAt(lat, l);
-    const y = 46 - e*40;
-    const x = (i/30)*300;
+  var span = 25, pts = [], mn=1, mx=0;
+  for(var i=0;i<=30;i++){
+    var l = lon - span/2 + (i/30)*span;
+    var e = elevationAt(lat, l);
+    if(e<mn) mn=e; if(e>mx) mx=e;
+    var x = (i/30)*300;
+    var y = 46 - e*40;
     pts.push([x,y]);
   }
-  // Smooth path
-  let d=`M${pts[0][0]},${pts[0][1]}`;
-  for(let i=1;i<pts.length;i++){
-    const [x,y]=pts[i]; d+=` L${x.toFixed(1)},${y.toFixed(1)}`;
-  }
-  d+=` L300,52 L0,52 Z`;
+  var d = 'M'+pts[0][0]+','+pts[0][1];
+  for(var i=1;i<pts.length;i++) d += ' L'+pts[i][0].toFixed(1)+','+pts[i][1].toFixed(1);
+  d += ' L300,52 L0,52 Z';
   document.getElementById('profPath').setAttribute('d', d);
-
-  let mn=1,mx=0;
-  for(let i=0;i<=30;i++){
-    const e=elevationAt(lat, lon-span/2+(i/30)*span);
-    mn=Math.min(mn,e); mx=Math.max(mx,e);
-  }
-  document.getElementById('profMin').textContent=(-8+(mn-0.5)*30).toFixed(1)+' km';
-  document.getElementById('profMax').textContent=(-8+(mx-0.5)*30).toFixed(1)+' km';
+  document.getElementById('profMin').textContent = (-8+(mn-0.5)*30).toFixed(1)+' km';
+  document.getElementById('profMax').textContent = (-8+(mx-0.5)*30).toFixed(1)+' km';
 }
 
-// ================= LOG =================
+/* ---------- LOG ---------- */
 function log(msg){
-  const el=document.getElementById('log');
-  const t=new Date().toLocaleTimeString('en-GB',{hour12:false});
-  const d=document.createElement('div');
-  d.innerHTML=`<span class="t">[${t}]</span> ${msg}`;
+  var el = document.getElementById('log');
+  var t = new Date().toLocaleTimeString('en-GB',{hour12:false});
+  var d = document.createElement('div');
+  d.innerHTML = '<span class="t">['+t+']</span> '+msg;
   el.appendChild(d);
-  if(el.children.length>6) el.removeChild(el.children[0]);
+  if(el.children.length > 6) el.removeChild(el.children[0]);
 }
 
-// ================= ANIMATE =================
-let t0=performance.now();
-function loop(){
-  requestAnimationFrame(loop);
-  const t=(performance.now()-t0)/1000;
-  if(pulseRing){
-    const s=1+0.35*Math.sin(t*4);
-    pulseRing.scale.set(s,s,1);
-    pulseRing.material.opacity=0.5+0.35*Math.sin(t*4);
-  }
-  controls.update();
-  renderer.render(scene,camera);
-}
-loop();
-
-addEventListener('resize', ()=>{
-  camera.aspect=innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight);
+/* ---------- WIRE UP UI ---------- */
+document.querySelectorAll('.mode button').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('.mode button').forEach(function(x){
+      x.classList.remove('on');
+    });
+    b.classList.add('on');
+    placementMode = b.dataset.m;
+    log('Mode → '+placementMode);
+    if(placed) analyze(placed.lat, placed.lon);
+  });
 });
 
-// Auto demo after boot
-setTimeout(()=>{
+document.querySelectorAll('.layer').forEach(function(el){
+  el.addEventListener('click', function(){
+    var k = el.dataset.k;
+    layerOn[k] = !layerOn[k];
+    el.classList.toggle('on', layerOn[k]);
+    el.querySelector('.st').textContent = layerOn[k]?'ON':'OFF';
+  });
+});
+
+function analyze(lat, lon){
+  var s = feasibility(lat, lon);
+  renderScore(s, lat, lon);
+  drawProfile(lat, lon);
+  log('Site '+lat.toFixed(1)+'°, '+lon.toFixed(1)+'° → '+s.total);
+}
+
+/* ---------- BOOT SEQUENCE ---------- */
+// Bake texture on next tick so boot UI paints first
+setTimeout(function(){
+  bakeTexture();
+  bootMsg.textContent = 'ready';
+  bootBar.style.width = '100%';
+  setTimeout(function(){ bootEl.classList.add('done'); }, 250);
   log('Sandbox ready · Mars fBm terrain baked');
   log('Layers: ICE + RAD active');
-  log('Mode: HABITAT · click surface');
-}, 1900);
+  log('Click surface to place module');
+  requestAnimationFrame(frame);
+}, 100);
+
+// Safety: force-hide boot after 3s no matter what
+setTimeout(function(){ bootEl.classList.add('done'); }, 3000);
+
+})();
 </script>
 </body>
 </html>
